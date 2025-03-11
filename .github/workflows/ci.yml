@@ -82,7 +82,7 @@ jobs:
 
     - name: ✅ Vérifier que le modèle a été généré
       run: |
-        if [ ! -f models/image_audio_fusion_model_retrained.h5 ]; then
+        if [ ! -f models/fusion.h5 ]; then
           echo "❌ ERREUR: Modèle introuvable !"
           exit 1
         else
@@ -93,7 +93,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/
+        path: models/fusion.h5  # 🔥 Assurez-vous que c'est bien fusion.h5 !
 
   # --- 🐳 Étape 3 : Build & Push Docker ---
   build_and_push:

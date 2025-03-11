@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 # --- 📂 Config ---
 DATA_DIR = "data_retrain/training"
 MAPPING_CSV = "data_retrain/mapping.csv"
-OLD_MODEL_PATH = "models/image_audio_fusion_new_model.h5"
+MODEL_PATH = "models/fusion.h5"
 NEW_MODEL_PATH = "models/image_audio_fusion_model_retrained.h5"
 
 # --- 📌 Vérification du dossier models ---
@@ -42,7 +42,7 @@ def load_data():
 
 # --- 📌 Chargement et modification du modèle ---
 def load_and_modify_model():
-    old_model = load_model(OLD_MODEL_PATH)
+    old_model = load_model(MODEL_PATH)
     for layer in old_model.layers:
         layer.trainable = False
 
