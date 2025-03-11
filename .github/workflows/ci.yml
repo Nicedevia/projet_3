@@ -9,6 +9,7 @@ on:
 
 jobs:
 
+  # --- 🧪 Étape 1 : Tests Unitaire et Validation ---
   test:
     runs-on: ubuntu-latest
 
@@ -29,11 +30,11 @@ jobs:
     - name: 📦 Installer TensorFlow en priorité
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0
+        pip install tensorflow==2.16.1
 
     - name: 📦 Installer les dépendances
       run: |
-        pip install -r requirements.txt
+        pip install --no-cache-dir -r requirements.txt
         pip install pytest coverage
 
     - name: 🚀 Exécuter les tests
@@ -45,6 +46,7 @@ jobs:
         coverage run --source=projet_3 --omit="*/tmp/*" -m pytest
         coverage report -m
 
+  # --- 🔥 Étape 2 : Réentraînement du modèle ---
   retrain:
     needs: test
     runs-on: ubuntu-latest
@@ -56,11 +58,11 @@ jobs:
     - name: 🔧 Installer TensorFlow en priorité
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0
+        pip install tensorflow==2.16.1
 
     - name: 📦 Installer les dépendances
       run: |
-        pip install -r requirements.txt
+        pip install --no-cache-dir -r requirements.txt
 
     - name: 🔥 Réentraîner le modèle IA
       run: |
@@ -72,6 +74,7 @@ jobs:
         name: retrained_model
         path: models/image_audio_fusion_model_retrained.h5  
 
+  # --- 🐳 Étape 3 : Construction et Push de l'Image Docker ---
   build_and_push:
     needs: retrain
     runs-on: ubuntu-latest
@@ -96,6 +99,7 @@ jobs:
         docker tag ia-api:latest intdpixel/ia-api:latest
         docker push intdpixel/ia-api:latest
 
+  # --- 📊 Étape 4 : Vérification des métriques (Prometheus) ---
   monitor:
     needs: build_and_push
     runs-on: ubuntu-latest
