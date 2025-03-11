@@ -21,6 +21,16 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: 🔎 Vérifier la version de Python et de pip
+      run: |
+        python --version
+        pip --version
+
+    - name: 📦 Installer TensorFlow en priorité
+      run: |
+        pip install --upgrade pip
+        pip install tensorflow==2.18.0
+
     - name: 📦 Installer les dépendances
       run: |
         pip install -r requirements.txt
@@ -43,10 +53,13 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🔧 Installer TensorFlow et toutes ses dépendances
+    - name: 🔧 Installer TensorFlow en priorité
       run: |
         pip install --upgrade pip
-        pip install tensorflow
+        pip install tensorflow==2.18.0
+
+    - name: 📦 Installer les dépendances
+      run: |
         pip install -r requirements.txt
 
     - name: 🔥 Réentraîner le modèle IA
@@ -71,6 +84,9 @@ jobs:
       run: |
         docker build -t ia-api:latest .
 
+    - name: 📜 Vérifier les images Docker avant le push
+      run: docker images
+
     - name: 📤 Connexion à DockerHub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -90,7 +106,7 @@ jobs:
         docker run -d -p 8000:8000 -p 9090:9090 intdpixel/ia-api:latest
         sleep 10  
 
-    - name: 🔍 Vérifier les services
+    - name: 🔍 Vérifier les services en cours
       run: |
         docker ps -a
         netstat -tulnp
