@@ -17,10 +17,10 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🛠 Installer Python et les dépendances
+    - name: 🛠 Installer Python et toutes les dépendances requises
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage fastapi memory_profiler librosa
+        pip install tensorflow==2.18.0 pytest coverage fastapi memory_profiler librosa httpx pandas matplotlib
 
     - name: 📥 Vérifier si `fusion.h5` est présent
       run: |
@@ -52,7 +52,7 @@ jobs:
     - name: 🛠 Installer TensorFlow et dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 librosa fastapi memory_profiler
+        pip install tensorflow==2.18.0 librosa fastapi memory_profiler httpx pandas matplotlib
 
     - name: 🔥 Réentraîner `fusion.h5`
       run: python scripts/retrainmapping.py
