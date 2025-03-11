@@ -40,14 +40,14 @@ jobs:
     - name: 💤 Pause de 6 minutes pour debug
       run: sleep 360  # 6 minutes
 
-    - name: 🧐 Vérifier si le modèle existe avant les tests
-      run: ls -lh models/ || echo "❌ Aucun modèle trouvé dans models/"
-
-    - name: 📥 Télécharger le modèle entraîné
+    - name: 📥 Télécharger l'artefact du modèle
       uses: actions/download-artifact@v4
       with:
         name: retrained_model
-        path: models
+        path: models/
+
+    - name: 🧐 Vérifier si le modèle téléchargé existe
+      run: ls -lh models/ || echo "❌ Modèle non trouvé après téléchargement."
 
     - name: 🚀 Exécuter les tests avec Timeout
       run: |
@@ -82,18 +82,18 @@ jobs:
 
     - name: ✅ Vérifier que le modèle a été généré
       run: |
-        if [ ! -f models/image_audio_fusion_model.h5 ]; then
-          echo "❌ ERREUR: Le modèle entraîné n'existe pas !"
+        if [ ! -f models/image_audio_fusion_model_retrained.h5 ]; then
+          echo "❌ ERREUR: Modèle introuvable !"
           exit 1
         else
-          echo "✅ Modèle IA fusion trouvé !"
+          echo "✅ Modèle trouvé, prêt à être uploadé."
         fi
 
     - name: 📤 Sauvegarder le modèle entraîné
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/image_audio_fusion_model.h5  
+        path: models/
 
   # --- 🐳 Étape 3 : Build & Push Docker ---
   build_and_push:
