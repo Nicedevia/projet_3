@@ -109,5 +109,5 @@ model.fit(X_audio, y, epochs=10, validation_split=0.2, batch_size=16, callbacks=
 
 # Sauvegarde du modèle entraîné
 os.makedirs("models", exist_ok=True)
-model.save("models/audio_classifier_final.keras")
+model.save("models/audio.keras")
 print("✅ Modèle audio sauvegardé !")

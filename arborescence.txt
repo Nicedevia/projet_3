@@ -4,6 +4,7 @@
     📄 clean_arborescence.py
     📄 clean_data.py
     📄 clean_project.sh
+    📄 config-3.py
     📄 config.py
     📄 docker-compose.yml
     📄 Dockerfile
@@ -172,13 +173,37 @@
                     📸 3 fichiers .jpg/.jpeg
                 📂 chien/
                     📸 2 fichiers .jpg/.jpeg
+    📂 data_retrain/
+        📄 mapping.csv
+        📂 training/
+            📂 audio/
+                📂 chat/
+                    🎵 30 fichiers .wav
+                📂 dog/
+                    🎵 30 fichiers .wav
+            📂 images/
+                📂 chat/
+                    📸 30 fichiers .jpg/.jpeg
+                📂 dog/
+                    📸 30 fichiers .jpg/.jpeg
     📂 data_sample/
         📂 audio/
             📂 cats/
-                🖼 10 fichiers .png
+                🎵 10 fichiers .wav
+                🖼 1 fichiers .png
+            📂 dogs/
+                🎵 10 fichiers .wav
+                🖼 1 fichiers .png
         📂 images/
             📂 cats/
                 📸 10 fichiers .jpg/.jpeg
+            📂 dogs/
+                📸 10 fichiers .jpg/.jpeg
+        📂 spectrograms/
+            📂 cats/
+                🖼 10 fichiers .png
+            📂 dogs/
+                🖼 10 fichiers .png
     📂 frontend/
         📄 app.py
         📄 frontend_classification.py
@@ -220,6 +245,7 @@
         📄 audio_classifier_final.keras
         📄 audio_image_classifier.keras
         📄 image_audio_fusion_model.keras
+        📄 image_audio_fusion_model_retrained.h5
         📄 image_audio_fusion_model_retrained.keras
         📄 image_audio_fusion_model_v10.keras
         📄 image_audio_fusion_model_v2.h5
@@ -250,6 +276,7 @@
         📄 extract_sample_data.py
         📄 generate_mapping_fixed.py
         📄 generate_mapping_test.py
+        📄 generate_retrain_dataset.py
         📄 generate_spectrograms.py
         📄 generate_train_mapping.py
         📄 generate_train_mapping_fusion.py
@@ -257,6 +284,7 @@
         📄 prepare_data.py
         📄 preprocess_audio.py
         📄 preprocess_images.py
+        📄 retrainmapping.py
         📄 run_all.sh
         📄 spectrogramme_fusion.py
         📄 sync_audio_images.py

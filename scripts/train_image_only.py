@@ -98,6 +98,6 @@ history = model.fit(
 
 # Sauvegarde du modèle
 os.makedirs("models", exist_ok=True)
-model.save("models/image_classifier_final.keras")
+model.save("models/image.h5")
 print("✅ Modèle image sauvegardé !")
 

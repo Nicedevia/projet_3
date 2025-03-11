@@ -37,8 +37,8 @@ jobs:
         pip install --no-cache-dir -r requirements.txt
         pip install pytest coverage
 
-    - name: 💤 Pause de 6 minutes pour debug
-      run: sleep 360  # 6 minutes
+    - name: 💤 Pause de 30 s pour debug
+      run: sleep 30 
 
     - name: 📥 Télécharger l'artefact du modèle
       uses: actions/download-artifact@v4
