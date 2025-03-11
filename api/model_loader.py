@@ -11,6 +11,6 @@ def load_audio_model():
     return model
 
 def load_fusion_model():
-    model = tf.keras.models.load_model("models/image_audio_fusion_model.h5", compile=True)
+    model = tf.keras.models.load_model("models/image_audio_fusion_new_model.h5", compile=True)
     print("✅ Modèle FUSION chargé avec succès !")
     return model
