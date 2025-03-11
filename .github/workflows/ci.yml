@@ -49,6 +49,15 @@ jobs:
     - name: 🧐 Vérifier si le modèle téléchargé existe
       run: ls -lh models/ || echo "❌ Modèle non trouvé après téléchargement."
 
+    - name: 📊 Vérification spécifique de fusion.h5
+      run: |
+        if [ -f models/fusion.h5 ]; then
+          echo "✅ fusion.h5 trouvé et prêt à être utilisé."
+        else
+          echo "❌ ERREUR: fusion.h5 introuvable !"
+          exit 1
+        fi
+
     - name: 🚀 Exécuter les tests avec Timeout
       run: |
         timeout 300 pytest --maxfail=1 --disable-warnings -q || echo "❌ Timeout atteint !"
@@ -80,20 +89,22 @@ jobs:
       run: |
         python scripts/retrainmapping.py
 
-    - name: ✅ Vérifier que le modèle a été généré
+    - name: 🔎 Vérifier que le modèle a été généré
       run: |
-        if [ ! -f models/fusion.h5 ]; then
-          echo "❌ ERREUR: Modèle introuvable !"
-          exit 1
+        ls -lh models/ || echo "❌ Le dossier models/ est vide !"
+        
+        if [ -f models/fusion.h5 ]; then
+          echo "✅ fusion.h5 est bien présent."
         else
-          echo "✅ Modèle trouvé, prêt à être uploadé."
+          echo "❌ ERREUR: fusion.h5 introuvable !"
+          exit 1
         fi
 
     - name: 📤 Sauvegarder le modèle entraîné
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/fusion.h5  # 🔥 Assurez-vous que c'est bien fusion.h5 !
+        path: models/  # On enregistre tout le dossier pour éviter les erreurs de fichier unique
 
   # --- 🐳 Étape 3 : Build & Push Docker ---
   build_and_push:
@@ -103,6 +114,21 @@ jobs:
     steps:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
+
+    - name: 📜 Télécharger l'artefact du modèle
+      uses: actions/download-artifact@v4
+      with:
+        name: retrained_model
+        path: models/
+
+    - name: 🔎 Vérification de fusion.h5 après téléchargement
+      run: |
+        if [ -f models/fusion.h5 ]; then
+          echo "✅ fusion.h5 trouvé après téléchargement."
+        else
+          echo "❌ ERREUR: fusion.h5 introuvable après téléchargement !"
+          exit 1
+        fi
 
     - name: 🛠 Construire l’image Docker
       run: |
