@@ -13,12 +13,19 @@ from .model_loader import load_image_model, load_audio_model, load_fusion_model
 DEFAULT_THRESHOLD = 0.5
 router = APIRouter()
 
-# Charger les modèles et créer les extracteurs de features
+# Charger les modèles
 image_model = load_image_model()
 audio_model = load_audio_model()
 fusion_model = load_fusion_model()
 
-# Création des extracteurs (couche avant-dernière de chaque modèle)
+# ✅ Forcer l'initialisation des modèles pour éviter les erreurs
+fake_image = np.random.rand(1, 64, 64, 1).astype(np.float32)
+fake_audio = np.random.rand(1, 64, 64, 1).astype(np.float32)
+
+_ = image_model.predict(fake_image)  # 🔥 Initialisation du modèle image
+_ = audio_model.predict(fake_audio)  # 🔥 Initialisation du modèle audio
+
+# ✅ Création des extracteurs de caractéristiques après initialisation
 image_extractor = tf.keras.Model(inputs=image_model.input, outputs=image_model.layers[-2].output)
 audio_extractor = tf.keras.Model(inputs=audio_model.input, outputs=audio_model.layers[-2].output)
 
@@ -29,7 +36,6 @@ request_counter = Counter("http_requests_total", "Nombre total de requêtes reç
 prediction_duration = Histogram("model_prediction_duration_seconds", "Durée des prédictions du modèle en secondes")
 prediction_errors = Counter("model_prediction_errors_total", "Nombre total d'erreurs lors des prédictions")
 
-# Endpoint pour exposer les métriques Prometheus
 @router.get("/metrics", tags=["Monitoring"])
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
@@ -66,43 +72,6 @@ def preprocess_audio_from_bytes(audio_bytes: bytes) -> np.ndarray:
 # Endpoints de Prédiction
 # ---------------------------
 
-# Endpoint pour la prédiction d'une image seule
-@router.post("/predict/image", tags=["Prediction"])
-async def predict_image(file: UploadFile = File(..., description="Fichier image (JPEG ou PNG)")):
-    if file.content_type not in ["image/jpeg", "image/png"]:
-        raise HTTPException(status_code=400, detail="Format d'image non supporté")
-    image_bytes = await file.read()
-    try:
-        features_image = preprocess_image_from_bytes(image_bytes)
-    except Exception as e:
-        prediction_errors.inc()
-        raise e
-
-    # Appel du modèle d'image (prédiction simplifiée)
-    prediction = image_model.predict(features_image)
-    label = "Chien" if prediction[0][0] > DEFAULT_THRESHOLD else "Chat"
-    confidence = float(prediction[0][0])
-    return {"prediction": label, "confidence": confidence, "used_threshold": DEFAULT_THRESHOLD}
-
-# Endpoint pour la prédiction d'un audio seul
-@router.post("/predict/audio", tags=["Prediction"])
-async def predict_audio(file: UploadFile = File(..., description="Fichier audio (WAV)")):
-    if file.content_type != "audio/wav":
-        raise HTTPException(status_code=400, detail="Format audio non supporté")
-    audio_bytes = await file.read()
-    try:
-        features_audio = preprocess_audio_from_bytes(audio_bytes)
-    except Exception as e:
-        prediction_errors.inc()
-        raise e
-
-    # Appel du modèle audio (prédiction simplifiée)
-    prediction = audio_model.predict(features_audio)
-    label = "Chien" if prediction[0][0] > DEFAULT_THRESHOLD else "Chat"
-    confidence = float(prediction[0][0])
-    return {"prediction": label, "confidence": confidence, "used_threshold": DEFAULT_THRESHOLD}
-
-# Endpoint pour la prédiction multimodale (image et audio)
 @router.post("/predict/multimodal", tags=["Prediction"])
 async def predict_multimodal(
     image_file: UploadFile = File(..., description="Fichier image (JPEG ou PNG)"),
@@ -132,18 +101,3 @@ async def predict_multimodal(
     label = "Chien" if prediction[0][0] > threshold else "Chat"
     confidence = float(prediction[0][0])
     return {"prediction": label, "confidence": confidence, "used_threshold": threshold}
-
-# ---------------------------
-# Authentification et Sécurisation
-# ---------------------------
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-@router.post("/token", tags=["Authentication"])
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    return {"access_token": "dummy_token", "token_type": "bearer"}
-
-@router.get("/protected", tags=["Authentication"])
-async def protected_route(token: str = Depends(oauth2_scheme)):
-    if token != "dummy_token":
-        raise HTTPException(status_code=401, detail="Token invalide")
-    return {"message": "Accès autorisé"}

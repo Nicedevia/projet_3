@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api:
     image: chat_dog_classification-api
@@ -8,13 +6,15 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models  # 🔥 Permet de garder le modèle même après un redémarrage
-      - ./logs:/app/logs      # 🔥 Stockage des logs d'entraînement
+      - ./models:/app/models
+      - ./logs:/app/logs
     networks:
       - mynetwork
     depends_on:
-      - prometheus
-      - grafana
+      prometheus:
+        condition: service_healthy
+      grafana:
+        condition: service_started
 
   retrain:
     image: chat_dog_classification-retrain
@@ -27,7 +27,8 @@ services:
     networks:
       - mynetwork
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus
@@ -38,8 +39,11 @@ services:
       - "9090:9090"
     networks:
       - mynetwork
-    depends_on:
-      - api  # 🔥 Prometheus démarre uniquement après l'API
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   grafana:
     image: grafana/grafana
@@ -48,6 +52,7 @@ services:
       - "3000:3000"
     networks:
       - mynetwork
+    depends_on: []
 
   alertmanager:
     image: prom/alertmanager
@@ -58,6 +63,7 @@ services:
       - "9093:9093"
     networks:
       - mynetwork
+    depends_on: []
 
   tensorboard:
     image: tensorflow/tensorflow

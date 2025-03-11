@@ -6,7 +6,6 @@ prometheus_client
 
 # Bibliothèques Machine Learning et Deep Learning
 tensorflow==2.18.0
-
 scikit-learn
 librosa
 tqdm
