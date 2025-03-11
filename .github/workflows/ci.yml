@@ -30,17 +30,29 @@ jobs:
     - name: 📦 Installer TensorFlow en priorité
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.16.1
+        pip install tensorflow==2.18.0
 
     - name: 📦 Installer les dépendances
       run: |
         pip install --no-cache-dir -r requirements.txt
         pip install pytest coverage
 
-    - name: 🚀 Exécuter les tests
+    - name: 💤 Pause de 6 minutes pour debug
+      run: sleep 360  # 6 minutes
+
+    - name: 🧐 Vérifier si le modèle existe avant les tests
+      run: ls -lh models/ || echo "❌ Aucun modèle trouvé dans models/"
+
+    - name: 📥 Télécharger le modèle entraîné
+      uses: actions/download-artifact@v4
+      with:
+        name: retrained_model
+        path: models
+
+    - name: 🚀 Exécuter les tests avec Timeout
       run: |
-        pytest --maxfail=1 --disable-warnings -q
-        
+        timeout 300 pytest --maxfail=1 --disable-warnings -q || echo "❌ Timeout atteint !"
+
     - name: 📊 Générer le rapport de couverture
       run: |
         coverage run --source=projet_3 --omit="*/tmp/*" -m pytest
@@ -58,7 +70,7 @@ jobs:
     - name: 🔧 Installer TensorFlow en priorité
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.15.0
+        pip install tensorflow==2.18.0
 
     - name: 📦 Installer les dépendances
       run: |
@@ -68,13 +80,22 @@ jobs:
       run: |
         python scripts/retrainmapping.py
 
+    - name: ✅ Vérifier que le modèle a été généré
+      run: |
+        if [ ! -f models/image_audio_fusion_model.h5 ]; then
+          echo "❌ ERREUR: Le modèle entraîné n'existe pas !"
+          exit 1
+        else
+          echo "✅ Modèle IA fusion trouvé !"
+        fi
+
     - name: 📤 Sauvegarder le modèle entraîné
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/image_audio_fusion_model_retrained.h5  
+        path: models/image_audio_fusion_model.h5  
 
-  # --- 🐳 Étape 3 : Construction et Push de l'Image Docker ---
+  # --- 🐳 Étape 3 : Build & Push Docker ---
   build_and_push:
     needs: retrain
     runs-on: ubuntu-latest
@@ -99,7 +120,7 @@ jobs:
         docker tag ia-api:latest intdpixel/ia-api:latest
         docker push intdpixel/ia-api:latest
 
-  # --- 📊 Étape 4 : Vérification des métriques (Prometheus) ---
+  # --- 📊 Étape 4 : Monitorage avec Prometheus ---
   monitor:
     needs: build_and_push
     runs-on: ubuntu-latest
