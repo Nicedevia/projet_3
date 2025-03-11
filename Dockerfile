@@ -29,12 +29,11 @@ COPY . /app/
 EXPOSE 8000  
 EXPOSE 9090  
 
-
 # Assurer que le dossier des modèles existe
 RUN mkdir -p /app/models
 
 # Copier les modèles existants dans le conteneur
 COPY models /app/models
 
-# Lancer l'API FastAPI avec Uvicorn
-CMD ["uvicorn", "api.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# 🔥 Attendre 5 secondes avant de démarrer Uvicorn pour éviter des crashs
+CMD ["sh", "-c", "sleep 5 && uvicorn api.api:app --host 0.0.0.0 --port 8000"]

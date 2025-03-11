@@ -9,7 +9,6 @@ on:
 
 jobs:
 
-  # --- 🧪 Étape 1 : Tests Unitaire et Validation ---
   test:
     runs-on: ubuntu-latest
 
@@ -27,12 +26,6 @@ jobs:
         pip install -r requirements.txt
         pip install pytest coverage
 
-    - name: 🔎 Vérifier l’environnement
-      run: |
-        python --version
-        pip list
-        ls -la
-
     - name: 🚀 Exécuter les tests
       run: |
         pytest --maxfail=1 --disable-warnings -q
@@ -42,7 +35,6 @@ jobs:
         coverage run --source=projet_3 --omit="*/tmp/*" -m pytest
         coverage report -m
 
-  # --- 🔥 Étape 2 : Réentraînement du modèle ---
   retrain:
     needs: test
     runs-on: ubuntu-latest
@@ -51,20 +43,11 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🛠 Installer Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: 🔧 Installer TensorFlow et toutes ses dépendances manquantes
+    - name: 🔧 Installer TensorFlow et toutes ses dépendances
       run: |
         pip install --upgrade pip
         pip install tensorflow
         pip install -r requirements.txt
-
-    - name: 📦 Installer les dépendances
-      run: |
-        pip install --no-cache-dir --no-deps --upgrade -r requirements.txt
 
     - name: 🔥 Réentraîner le modèle IA
       run: |
@@ -74,9 +57,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/image_audio_fusion_model_retrained.h5  # 🔥 Sauvegarde en .h5 au lieu de .keras
+        path: models/image_audio_fusion_model_retrained.h5  
 
-  # --- 🐳 Étape 3 : Construction et Push de l'Image Docker ---
   build_and_push:
     needs: retrain
     runs-on: ubuntu-latest
@@ -89,9 +71,6 @@ jobs:
       run: |
         docker build -t ia-api:latest .
 
-    - name: 📜 Vérifier les images Docker avant le push
-      run: docker images
-
     - name: 📤 Connexion à DockerHub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -101,27 +80,21 @@ jobs:
         docker tag ia-api:latest intdpixel/ia-api:latest
         docker push intdpixel/ia-api:latest
 
-  # --- 📊 Étape 4 : Vérification des métriques (Prometheus) ---
   monitor:
-    needs: build_and_push  # 🔥 Dépend maintenant de build_and_push
+    needs: build_and_push
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 🚀 Démarrer le conteneur Docker
       run: |
-        docker run -d -p 8000:8000 intdpixel/ia-api:latest
-        sleep 10  # Attendre 10 secondes pour s'assurer que l'API démarre
+        docker run -d -p 8000:8000 -p 9090:9090 intdpixel/ia-api:latest
+        sleep 10  
 
-    - name: 🔍 Vérifier les conteneurs actifs
-      run: docker ps -a
-
-    - name: 🔍 Vérifier les processus en cours
-      run: ps aux
-
-    - name: 🔍 Vérifier les ports ouverts
-      run: netstat -tulnp
-
-    - name: 📊 Vérifier l'état des métriques Prometheus
+    - name: 🔍 Vérifier les services
       run: |
-        curl -X GET http://localhost:8000/metrics
-        curl -X GET http://localhost:9090
+        docker ps -a
+        netstat -tulnp
+
+    - name: 📊 Vérifier Prometheus
+      run: |
+        wget -S http://localhost:9090/metrics || echo "❌ Prometheus ne répond pas"

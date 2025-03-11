@@ -16,14 +16,13 @@ services:
       - prometheus
       - grafana
 
-  # --- 🔥 Service pour le réentraînement automatique ---
   retrain:
     image: chat_dog_classification-retrain
     container_name: chat_dog_classification-retrain
     build: .
     command: ["python", "scripts/train_image_audio_fusion_retrain.py"]
     volumes:
-      - ./models:/app/models  # 🔥 Le modèle mis à jour sera conservé
+      - ./models:/app/models
       - ./logs:/app/logs
     networks:
       - mynetwork
@@ -39,6 +38,8 @@ services:
       - "9090:9090"
     networks:
       - mynetwork
+    depends_on:
+      - api  # 🔥 Prometheus démarre uniquement après l'API
 
   grafana:
     image: grafana/grafana
