@@ -1,4 +1,4 @@
-name: CI/CD - Test, Retrain, Deploy & Monitor
+name: CI/CD - Test, Retrain, Build & Monitor
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
 
-  # --- 🧪 Étape 1 : Tests Unitaires ---
+  # --- 🧪 Étape 1 : Tests Unitaire et Validation ---
   test:
     runs-on: ubuntu-latest
 
@@ -34,6 +34,7 @@ jobs:
     - name: 🚀 Exécuter les tests
       run: |
         pytest --maxfail=1 --disable-warnings -q
+        
     - name: 📊 Générer le rapport de couverture
       run: |
         coverage run --source=projet_3 --omit="*/tmp/*" -m pytest
@@ -52,19 +53,24 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: 🔧 Installer TensorFlow et toutes ses dépendances manquantes
+      run: |
+        pip install --upgrade pip
+        pip install tensorflow
+        pip install -r requirements.txt
     - name: 📦 Installer les dépendances
       run: |
-        pip install -r requirements.txt
+        pip install --no-cache-dir --no-deps --upgrade -r requirements.txt
     - name: 🔥 Réentraîner le modèle IA
       run: |
-        python scripts/train_image_audio_fusion_retrain.py
+        python scripts/retrainmapping.py
     - name: 📤 Sauvegarder le modèle entraîné
       uses: actions/upload-artifact@v4
       with:
         name: retrained_model
-        path: models/image_audio_fusion_model_retrained.h5
+        path: models/image_audio_fusion_model_retrained.h5  # 🔥 Sauvegarde en .h5 au lieu de .keras
 
-  # --- 🐳 Étape 3 : Build & Push Docker ---
+  # --- 🐳 Étape 3 : Construction et Push de l'Image Docker ---
   build_and_push:
     needs: retrain
     runs-on: ubuntu-latest
@@ -73,44 +79,39 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 📥 Télécharger le modèle entraîné
-      uses: actions/download-artifact@v4
-      with:
-        name: retrained_model
-        path: models/
-
     - name: 🛠 Construire l’image Docker
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest .
-    - name: 📤 Pousser l’image vers DockerHub
+        docker build -t ia-api:latest .
+    - name: 📜 Vérifier les images Docker avant le push
+      run: docker images
+
+    - name: 📤 Connexion à DockerHub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker push ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest
-  # --- 🚀 Étape 4 : Déploiement Automatique ---
-  deploy:
-    needs: build_and_push
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: 🔄 Se connecter au serveur via SSH
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SERVER_USER }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-
-    - name: 🚀 Mettre à jour et redémarrer le conteneur
+    - name: 📤 Pousser l’image vers DockerHub
       run: |
-        docker pull ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest
-        docker-compose down
-        docker-compose up -d
-  # --- 📊 Étape 5 : Vérification des métriques (Prometheus) ---
+        docker tag ia-api:latest intdpixel/ia-api:latest
+        docker push intdpixel/ia-api:latest
+  # --- 📊 Étape 4 : Vérification des métriques (Prometheus) ---
   monitor:
-    needs: deploy
+    needs: build_and_push  # 🔥 Dépend maintenant de build_and_push
     runs-on: ubuntu-latest
-
+    
     steps:
+    - name: 🚀 Démarrer le conteneur Docker
+      run: |
+        docker run -d -p 8000:8000 intdpixel/ia-api:latest
+        sleep 10  # Attendre 10 secondes pour s'assurer que l'API démarre
+    - name: 🔍 Vérifier les conteneurs actifs
+      run: docker ps -a
+
+    - name: 🔍 Vérifier les processus en cours
+      run: ps aux
+
+    - name: 🔍 Vérifier les ports ouverts
+      run: netstat -tulnp
+
     - name: 📊 Vérifier l'état des métriques Prometheus
       run: |
         curl -X GET http://localhost:8000/metrics
-        curl -X GET http://localhost:9090
+        
