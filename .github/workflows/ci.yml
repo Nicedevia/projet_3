@@ -5,7 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Permet un lancement manuel
+  workflow_dispatch:
 
 jobs:
 
@@ -17,11 +17,12 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🛠 Installer Python et TensorFlow
+    - name: 🛠 Installer Python et dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotli numpy<2
-        pip install opencv-python-headless  # OpenCV sans GUI (recommandé pour CI/CD)
+        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy<2.0
+        pip install opencv-python-headless fastapi scikit-learn memory-profiler  # Dépendances manquantes
+
     - name: 🔎 Vérifier l'environnement
       run: |
         python --version
@@ -37,7 +38,7 @@ jobs:
         echo "✅ Modèle `fusion.h5` trouvé, test en cours..."
 
     - name: 🚀 Exécuter les tests avec timeout
-      run: timeout 300 pytest --maxfail=1 -v || echo "❌ Tests échoués ou bloqués"
+      run: pytest --maxfail=1 -v || echo "❌ Tests échoués ou bloqués"
 
     - name: 📊 Générer un rapport de couverture
       run: |
@@ -54,11 +55,12 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 📦 Installer les dépendances
+    - name: 📦 Installer TensorFlow et dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotli numpy<2
-        pip install opencv-python-headless  # OpenCV sans GUI (recommandé pour CI/CD)
+        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy<2.0
+        pip install opencv-python-headless fastapi scikit-learn memory-profiler  # Dépendances manquantes
+
     - name: 🔥 Réentraîner `fusion.h5`
       run: python scripts/retrainmapping.py
 
