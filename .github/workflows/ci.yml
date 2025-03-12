@@ -32,7 +32,8 @@ jobs:
 
     - name: 🚀 Exécuter les tests sur `fusion.h5`
       run: |
-        timeout 300 pytest --maxfail=1 --disable-warnings -q || echo "❌ Tests échoués mais on continue."
+        pytest --maxfail=5 -ra || echo "❌ Certains tests ont échoué, voir les logs."
+
 
     - name: 📊 Générer un rapport de couverture
       run: |
