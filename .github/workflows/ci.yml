@@ -1,15 +1,15 @@
-name: CI/CD - Test, Retrain, Build & Monitor
+name: CI/CD - Test, Retrain, Deploy & Monitor
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Permet un lancement manuel
 
 jobs:
 
-  # --- 🧪 Étape 1 : Tester `fusion.h5` existant ---
+  # --- 🧪 Étape 1 : Tests Unitaires ---
   test:
     runs-on: ubuntu-latest
 
@@ -17,62 +17,54 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🛠 Installer Python et toutes les dépendances requises
+    - name: 🛠 Installer Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 📦 Installer les dépendances
       run: |
-        pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage fastapi memory_profiler librosa httpx pandas matplotlib prometheus_client opencv-python-headless
-
-    - name: 📥 Vérifier si `fusion.h5` est présent
+        pip install -r requirements.txt
+        pip install pytest coverage
+    - name: 🔎 Vérifier l’environnement
       run: |
-        if [ ! -f models/fusion.h5 ]; then
-          echo "❌ ERREUR: Le modèle `fusion.h5` est introuvable !"
-          exit 1
-        fi
-        echo "✅ Modèle `fusion.h5` trouvé, test en cours..."
-
-    - name: 🚀 Exécuter les tests sur `fusion.h5`
+        python --version
+        pip list
+        ls -la
+    - name: 🚀 Exécuter les tests
       run: |
-        pytest --maxfail=5 -ra || echo "❌ Certains tests ont échoué, voir les logs."
-
-
-    - name: 📊 Générer un rapport de couverture
+        pytest --maxfail=1 --disable-warnings -q
+    - name: 📊 Générer le rapport de couverture
       run: |
         coverage run --source=projet_3 --omit="*/tmp/*" -m pytest
         coverage report -m
-
-  # --- 🔥 Étape 2 : Réentraîner et mettre à jour `fusion.h5` ---
+  # --- 🔥 Étape 2 : Réentraînement du modèle ---
   retrain:
     needs: test
     runs-on: ubuntu-latest
-    continue-on-error: true  # ⚠ Même si les tests échouent, on tente l'entraînement
 
     steps:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 🛠 Installer TensorFlow et dépendances
+    - name: 🛠 Installer Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 📦 Installer les dépendances
       run: |
-        pip install --upgrade pip
-        pip install tensorflow==2.18.0 librosa fastapi memory_profiler httpx pandas matplotlib prometheus_client opencv-python-headless
-
-    - name: 🔥 Réentraîner `fusion.h5`
-      run: python scripts/retrainmapping.py
-
-    - name: ✅ Vérifier que le modèle mis à jour est bien là
+        pip install -r requirements.txt
+    - name: 🔥 Réentraîner le modèle IA
       run: |
-        if [ ! -f models/fusion.h5 ]; then
-          echo "❌ ERREUR: Le modèle réentraîné `fusion.h5` est introuvable !"
-          exit 1
-        fi
-        echo "✅ Modèle mis à jour `fusion.h5` trouvé, prêt à être uploadé."
-
-    - name: 📤 Sauvegarder `fusion.h5`
+        python scripts/train_image_audio_fusion_retrain.py
+    - name: 📤 Sauvegarder le modèle entraîné
       uses: actions/upload-artifact@v4
       with:
-        name: fusion_model
-        path: models/fusion.h5
+        name: retrained_model
+        path: models/image_audio_fusion_model_retrained.h5
 
-  # --- 🐳 Étape 3 : Build Docker avec `fusion.h5` mis à jour ---
+  # --- 🐳 Étape 3 : Build & Push Docker ---
   build_and_push:
     needs: retrain
     runs-on: ubuntu-latest
@@ -81,38 +73,44 @@ jobs:
     - name: 📥 Cloner le repo
       uses: actions/checkout@v3
 
-    - name: 📥 Télécharger `fusion.h5`
+    - name: 📥 Télécharger le modèle entraîné
       uses: actions/download-artifact@v4
       with:
-        name: fusion_model
+        name: retrained_model
         path: models/
 
-    - name: 🛠 Construire l’image Docker avec `fusion.h5`
-      run: docker build -t ia-api:latest .
-
-    - name: 📤 Connexion à DockerHub
+    - name: 🛠 Construire l’image Docker
       run: |
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest .
     - name: 📤 Pousser l’image vers DockerHub
       run: |
-        docker tag ia-api:latest intdpixel/ia-api:latest
-        docker push intdpixel/ia-api:latest
-
-  # --- 📊 Étape 4 : Monitorage avec Prometheus ---
-  monitor:
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        docker push ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest
+  # --- 🚀 Étape 4 : Déploiement Automatique ---
+  deploy:
     needs: build_and_push
     runs-on: ubuntu-latest
 
     steps:
-    - name: 🚀 Lancer le conteneur avec `fusion.h5`
-      run: |
-        docker run -d -p 8000:8000 -p 9090:9090 intdpixel/ia-api:latest
-        sleep 10  
+    - name: 🔄 Se connecter au serveur via SSH
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
 
-    - name: 🔍 Vérifier les services
-      run: docker ps -a
-
-    - name: 📊 Vérifier Prometheus
+    - name: 🚀 Mettre à jour et redémarrer le conteneur
       run: |
-        wget -S http://localhost:9090/metrics || echo "❌ Prometheus ne répond pas"
+        docker pull ${{ secrets.DOCKER_USERNAME }}/chat_dog_classification-api:latest
+        docker-compose down
+        docker-compose up -d
+  # --- 📊 Étape 5 : Vérification des métriques (Prometheus) ---
+  monitor:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📊 Vérifier l'état des métriques Prometheus
+      run: |
+        curl -X GET http://localhost:8000/metrics
+        curl -X GET http://localhost:9090
