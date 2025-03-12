@@ -10,11 +10,6 @@ services:
       - ./logs:/app/logs
     networks:
       - mynetwork
-    depends_on:
-      prometheus:
-        condition: service_healthy
-      grafana:
-        condition: service_started
 
   retrain:
     image: chat_dog_classification-retrain

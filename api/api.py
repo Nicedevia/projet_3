@@ -11,6 +11,8 @@ from prometheus_client import (
 )
 import time
 
+from .routes import router as api_router
+
 # Import du routeur de l'API (assure-toi que routes.py ne contient plus de middleware)
 from .routes import router as api_router
 
