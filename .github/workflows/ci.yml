@@ -20,7 +20,7 @@ jobs:
     - name: 🛠 Installer Python et dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy<2.0
+        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy==2.0.0
         pip install opencv-python-headless fastapi scikit-learn memory-profiler  # Dépendances manquantes
 
     - name: 🔎 Vérifier l'environnement
@@ -58,7 +58,7 @@ jobs:
     - name: 📦 Installer TensorFlow et dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy<2.0
+        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib numpy==2.0.0
         pip install opencv-python-headless fastapi scikit-learn memory-profiler  # Dépendances manquantes
 
     - name: 🔥 Réentraîner `fusion.h5`
