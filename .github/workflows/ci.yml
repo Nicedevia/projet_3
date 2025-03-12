@@ -57,7 +57,7 @@ jobs:
     - name: 📦 Installer les dépendances
       run: |
         pip install --upgrade pip
-        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotlib opencv-python
+        pip install tensorflow==2.18.0 pytest coverage httpx prometheus_client pandas librosa matplotli numpy<2 opencv-python
 
     - name: 🔥 Réentraîner `fusion.h5`
       run: python scripts/retrainmapping.py
